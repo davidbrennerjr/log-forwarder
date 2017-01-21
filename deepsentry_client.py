@@ -23,7 +23,8 @@
 # external scheduler to run this script periodically.
 #
 # Usage
-# ./deepsentry-client.py --key generated_api_key --path /path/to/log(s)
+# ./deepsentry-client.py options --key generated_api_key --path /path/to/log(s)
+# --certfile /path/to/client.crt --certkey /path/to/client.key
 ################################################################################
 
 # start of script
@@ -39,6 +40,7 @@ if __name__ == "__main__":
     sys.exit()
   # call functions
   deepsentry_check.required_options()
+  deepsentry_check.optional_options()
   deepsentry_records.create_record_file()
   deepsentry_records.create_records()
   deepsentry_records.update_file_sizes()

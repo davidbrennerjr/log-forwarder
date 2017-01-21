@@ -35,6 +35,7 @@ except ImportError:
 try:
   from deepsentry_check import CLIENT_API_KEY
   from deepsentry_check import CLIENT_LOG_PATHNAME
+  from deepsentry_check import CLIENT_TLS_CERTIFICATE
 except NameError:
   print("FAILURE: Failed to import required globals from module deepsentry_check")
   sys.exit()
@@ -62,9 +63,10 @@ def next_record_number():
   count = largest + 1
   return(count)  
 
-# FIXME: test against deepsentry rest-api!!! connect to server via HTTPS over
-# TLS whenever client has valid TLS certificate. when client doesn't have a TLS
-# certificate issue a WARNING message then connect over HTTPS. 
+# FIXME: test against deepsentry rest-api!!! when client has certificate and key
+# use HTTPS and Allowed IP Address (server-side) + TLS Certificate and TLS Key
+# (client-side). when client isn't using a certificate or the certificate/key is
+# invalid, use only server-side encryption. 
 def send_file_updates(path="", size=0, offset=0):
   # Requests may attempt to provide the Content-Length header for you, and if it
   # does this value will be set to the number of bytes in the file. Errors may
@@ -75,9 +77,23 @@ def send_file_updates(path="", size=0, offset=0):
   # setup session
   session = requests.session()
   url = "https://www.deepsentry.com/rest/logs/save?id=%s" % CLIENT_API_KEY
-  req = requests.request('PUT', url, files=fd, allow_redirects=False)
-  content = req.prepare()
-  res = session.send(content, verify=verify)
+  certfile = ""
+  certkey = ""
+  # check for certificate and key
+  if CLIENT_TLS_CERTIFICATE != False:
+    for path in CLIENT_TLS_CERTIFICATE:
+      if ".cert" in path:
+        certfile = path
+      if ".key" in path:
+        certkey = path
+    req = requests.request('PUT', url, files=fd, cert=(certfile, certkey), allow_redirects=False)
+    content = req.prepare()
+    res = session.send(content, verify=True)  
+  else:  
+    req = requests.request('PUT', url, files=fd, allow_redirects=False)
+    content = req.prepare()
+    res = session.send(content, verify=False)
+  # check response
   if res.status_code == requests.codes.ok:
     length = size
   else:
