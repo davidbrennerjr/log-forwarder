@@ -103,10 +103,10 @@ def optional_options():
   if cert_exists == True and key_exists == True:
     CLIENT_TLS_CERTIFICATE = []
     CLIENT_TLS_CERTIFICATE = list(set(files_list))
-    # required clean up
-    del files_list
   else:
     CLIENT_TLS_CERTIFICATE = False
+  # required clean up
+  del files_list
   sys.exit()
 
 # remove code from Python runtime  
