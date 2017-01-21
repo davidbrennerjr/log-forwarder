@@ -72,7 +72,12 @@ def send_file_updates(path="", size=0, offset=0):
   # does this value will be set to the number of bytes in the file. Errors may
   # occur if you open the file in text mode.
   fd.open(path, "rb")
-  fd.seek(offset)
+  # Second parameter specifies what the first one means; 0 means move to an
+  # absolute position (counting from the start of the file), 1 means move to a
+  # relative position (counting from the current position), and 2 means move to
+  # a position relative to the end of the file. Use 2 and tell the file object
+  # to move to a position at offset bytes from the end of the file.  
+  fd.seek(-offset, 2)
   fd.read()
   # setup session
   session = requests.session()
