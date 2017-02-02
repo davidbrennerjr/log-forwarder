@@ -63,25 +63,22 @@ def next_record_number():
   count = largest + 1
   return(count)  
 
-# FIXME: test against deepsentry rest-api!!! when client has certificate and key
-# use HTTPS and Allowed IP Address (server-side) + TLS Certificate and TLS Key
-# (client-side). when client isn't using a certificate or the certificate/key is
-# invalid, use only server-side encryption. 
+# FIXME: when client has certificate and key use HTTPS and Allowed IP Address
+# (server-side) + TLS Certificate and TLS Key (client-side). when client isn't
+# using a certificate or the certificate/key is invalid, use only server-side
+# encryption. 
 def send_file_updates(path="", size=0, offset=0):
   # Requests may attempt to provide the Content-Length header for you, and if it
   # does this value will be set to the number of bytes in the file. Errors may
   # occur if you open the file in text mode.
-  fd.open(path, "rb")
-  # Second parameter specifies what the first one means; 0 means move to an
-  # absolute position (counting from the start of the file), 1 means move to a
-  # relative position (counting from the current position), and 2 means move to
-  # a position relative to the end of the file. Use 2 and tell the file object
-  # to move to a position at offset bytes from the end of the file.  
-  fd.seek(-offset, 2)
+  fd = open(path, "rb") 
+  fd.seek(offset, 1)
   fd.read()
-  # setup session
+  # FIXME: can't use httplib/urllib (too buggy, platform dependent). can't use requests
+  # (too buggy, requires req/res be JSON formatted). Use PyCURL?
   session = requests.session()
-  url = "https://www.deepsentry.com/rest/logs/save?id=%s" % CLIENT_API_KEY
+  #url = "https://www.deepsentry.com/rest/logs/save?id=%s" % CLIENT_API_KEY
+  url = "https://192.168.1.109/save?id=%s" % CLIENT_API_KEY
   certfile = ""
   certkey = ""
   # check for certificate and key
@@ -94,7 +91,8 @@ def send_file_updates(path="", size=0, offset=0):
     req = requests.request('PUT', url, files=fd, cert=(certfile, certkey), allow_redirects=False)
     content = req.prepare()
     res = session.send(content, verify=True)  
-  else:  
+  else: 
+    print("ok") 
     req = requests.request('PUT', url, files=fd, allow_redirects=False)
     content = req.prepare()
     res = session.send(content, verify=False)
