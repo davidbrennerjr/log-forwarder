@@ -65,7 +65,7 @@ def required_options():
         i = i + 1
   except IOError:
     print("FAILURE: Invalid options for deepsentry_client.py")
-    print("Usage: ./deepsentry_client.py --key XXXXX-XXXXX-XXXXX-XXXXX-XXXXX --path /path/to/log(s)")
+    print("Usage: ./deepsentry-client.py --key generated_api_key --path /path/to/log(s) --certfile /path/to/client.crt --certkey /path/to/client.key")
     sys.exit() 
 
 # if user specified a client.cert and client.key, set TLS_CERTIFICATE to true.

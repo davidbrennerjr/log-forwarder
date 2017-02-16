@@ -26,7 +26,8 @@ try:
   import json
   import re
   import syslog
-  import requests
+  import pycurl
+  import base64
 except ImportError:
   print("FAILURE: Failed to import required modules for deepsentry_session")
   sys.exit()
@@ -63,46 +64,41 @@ def next_record_number():
   count = largest + 1
   return(count)  
 
-# FIXME: when client has certificate and key use HTTPS and Allowed IP Address
-# (server-side) + TLS Certificate and TLS Key (client-side). when client isn't
-# using a certificate or the certificate/key is invalid, use only server-side
-# encryption. 
+# when host has certificate and key use HTTPS + TLS Certificate (client-side)
+# and TLS Key (client-side). when client isn't using certificate or the
+# certificate/key is invalid, use only server-side encryption. 
 def send_file_updates(path="", size=0, offset=0):
-  # Requests may attempt to provide the Content-Length header for you, and if it
-  # does this value will be set to the number of bytes in the file. Errors may
-  # occur if you open the file in text mode.
-  fd = open(path, "rb") 
-  fd.seek(offset, 1)
-  fd.read()
-  # FIXME: can't use httplib/urllib (too buggy, platform dependent). can't use requests
-  # (too buggy, requires req/res be JSON formatted). Use PyCURL?
-  session = requests.session()
-  #url = "https://www.deepsentry.com/rest/logs/save?id=%s" % CLIENT_API_KEY
-  url = "https://192.168.1.109/save?id=%s" % CLIENT_API_KEY
+  url = "https://www.deepsentry.com/api/v1/logs/upload?id=%s" % CLIENT_API_KEY
   certfile = ""
   certkey = ""
-  # check for certificate and key
-  if CLIENT_TLS_CERTIFICATE != False:
-    for path in CLIENT_TLS_CERTIFICATE:
-      if ".cert" in path:
-        certfile = path
-      if ".key" in path:
-        certkey = path
-    req = requests.request('PUT', url, files=fd, cert=(certfile, certkey), allow_redirects=False)
-    content = req.prepare()
-    res = session.send(content, verify=True)  
-  else: 
-    print("ok") 
-    req = requests.request('PUT', url, files=fd, allow_redirects=False)
-    content = req.prepare()
-    res = session.send(content, verify=False)
+  fd = open(path, "rb")    
+  fd.seek(offset, 1)
+  fd_data = fd.read()
+  fd_encoded = base64.b64encode(fd_data)
+  session = pycurl.Curl()
+  session.setopt(session.URL, url)
+  session.setopt(session.HTTPPOST, [(path,(session.FORM_BUFFERPTR,encoded,)),])
+  session.perform()
+
+  # FIXME: check for certificate and key
+  #if CLIENT_TLS_CERTIFICATE != False:
+  #  for path in CLIENT_TLS_CERTIFICATE:
+  #    if ".cert" in path:
+  #      certfile = path
+  #    if ".key" in path:
+  #      certkey = path
+  #else:
+  #  rely on only server-side without client-side TLS certificates   
+    
   # check response
-  if res.status_code == requests.codes.ok:
-    length = size
+  if session.getinfo(session.RESPONSE_CODE) == 200:
+    filesize_sent = size
   else:
-    length = 0
+    filesize_sent = 0
+  
+  session.close()
   fd.close()
-  return(length)
+  return(filesize_sent)
   
 # if content sent is 0, send file. if size not equal to content sent, get
 # starting position of diff then send diff. update data in json file.  
@@ -132,18 +128,18 @@ def file_updates():
     sent = int(sent)
     # if content sent is 0, send file. else send delta.
     if sent is 0:
-      length = send_file_updates(path, size, 0)
+      size_sent = send_file_updates(path, size, 0)
     else:
       # determine offset as next position in file to be uploaded
       offset = sent+1
-      length = send_file_updates(path, size, offset)
+      size_sent = send_file_updates(path, size, offset)
     # check that content sent using sendfile() matches size of file, print error
-    # message. update "sent" entry in JSON file with length.
-    if length != size:
-      syslog.syslog("ERROR: Couldn't upload file changes to server \"%s\" Attempted to send \"%d\" of file, but something went wrong." % (path, length))
+    # message. update "sent" entry in JSON file with size_sent.
+    if size_sent != size:
+      syslog.syslog("ERROR: Couldn't upload file changes to server \"%s\" Attempted to send \"%d\" of file, but something went wrong." % (path, size_sent))
     else:
       key = "%s sent" % counter 
-      set[key] = length
+      set[key] = sent_size
     counter = counter - 1
     # update data
     data[counter] = set

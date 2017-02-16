@@ -1,7 +1,7 @@
 #!/usr/bin/python3.5
 
 ################################################################################
-# deepsentry-client.py - Send deltas of file(s) over TLS to server 
+# deepsentry-client.py - Forwards file(s) over TLS+HTTPS to server 
 #  
 # Copyright 2017 by David Brenner Jr <david.brenner.jr@gmail.com>
 #
@@ -23,7 +23,7 @@
 # external scheduler to run this script periodically.
 #
 # Usage
-# ./deepsentry-client.py options --key generated_api_key --path /path/to/log(s)
+# ./deepsentry-client.py --key generated_api_key --path /path/to/log(s)
 # --certfile /path/to/client.crt --certkey /path/to/client.key
 ################################################################################
 
