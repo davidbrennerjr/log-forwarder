@@ -81,7 +81,7 @@ def next_record_number():
 def create_records():
   count = next_record_number()
   fd = open("deepsentry_records.json", "a+")
-  for root,dirs,files in os.walk("/tmp/tmpdir/", topdown=True, onerror=None, followlinks=True):
+  for root,dirs,files in os.walk(CLIENT_LOG_PATHNAME, topdown=True, onerror=None, followlinks=True):
     files_list = []
     # get list of files
     for fname in files:
